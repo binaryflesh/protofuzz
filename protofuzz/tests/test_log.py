@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-
 import os
-import shutil
 import tempfile
 import unittest
 

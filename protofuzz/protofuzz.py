@@ -26,7 +26,7 @@ Usage:
 """
 
 # FIXME: Package containing module 'google' is not listed in project requirements
-from google.protobuf import descriptor as D
+from google.protobuf import descriptor
 from google.protobuf import message
 from google.protobuf.internal import containers
 
@@ -35,62 +35,61 @@ from protofuzz import pbimport, gen, values
 __all__ = ['ProtobufGenerator', 'from_file', 'from_description_string', 'from_protobuf_class']
 
 
-def _int_generator(descriptor, bitwidth, unsigned):
+def _int_generator(_descriptor, bitwidth, unsigned):
     vals = list(values.get_integers(bitwidth, unsigned))
-    return gen.IterValueGenerator(descriptor.name, vals)
+    return gen.IterValueGenerator(_descriptor.name, vals)
 
 
-def _string_generator(descriptor, max_length=0, limit=0):
+def _string_generator(_descriptor, max_length=0, limit=0):
     vals = list(values.get_strings(max_length, limit))
-    return gen.IterValueGenerator(descriptor.name, vals)
+    return gen.IterValueGenerator(_descriptor.name, vals)
 
 
-def _bytes_generator(descriptor, max_length=0, limit=0):
+def _bytes_generator(_descriptor, max_length=0, limit=0):
     strs = values.get_strings(max_length, limit)
     vals = [bytes(_, 'utf-8') for _ in strs]
-    return gen.IterValueGenerator(descriptor.name, vals)
+    return gen.IterValueGenerator(_descriptor.name, vals)
 
 
-def _float_generator(descriptor, bitwidth):
-    return gen.IterValueGenerator(descriptor.name, values.get_floats(bitwidth))
+def _float_generator(_descriptor, bitwidth):
+    return gen.IterValueGenerator(_descriptor.name, values.get_floats(bitwidth))
 
 
-def _enum_generator(descriptor):
-    vals = descriptor.enum_type.values_by_number.keys()
-    return gen.IterValueGenerator(descriptor.name, vals)
+def _enum_generator(_descriptor):
+    vals = _descriptor.enum_type.values_by_number.keys()
+    return gen.IterValueGenerator(_descriptor.name, vals)
 
 
-def _prototype_to_generator(descriptor, cls):
+def _prototype_to_generator(_descriptor, cls):
     """Return map of descriptor to a protofuzz generator."""
-    _fd = D.FieldDescriptor
-    generator = None
+    _fd = descriptor.FieldDescriptor
 
     ints32 = [_fd.TYPE_INT32, _fd.TYPE_UINT32, _fd.TYPE_FIXED32, _fd.TYPE_SFIXED32, _fd.TYPE_SINT32]
     ints64 = [_fd.TYPE_INT64, _fd.TYPE_UINT64, _fd.TYPE_FIXED64, _fd.TYPE_SFIXED64, _fd.TYPE_SINT64]
     ints_signed = [_fd.TYPE_INT32, _fd.TYPE_SFIXED32, _fd.TYPE_SINT32, _fd.TYPE_INT64, _fd.TYPE_SFIXED64,
                    _fd.TYPE_SINT64]
 
-    if descriptor.type in ints32 + ints64:
-        bitwidth = [32, 64][descriptor.type in ints64]
-        unsigned = descriptor.type not in ints_signed
-        generator = _int_generator(descriptor, bitwidth, unsigned)
-    elif descriptor.type == _fd.TYPE_DOUBLE:
-        generator = _float_generator(descriptor, 64)
-    elif descriptor.type == _fd.TYPE_FLOAT:
-        generator = _float_generator(descriptor, 32)
-    elif descriptor.type == _fd.TYPE_STRING:
-        generator = _string_generator(descriptor)
-    elif descriptor.type == _fd.TYPE_BYTES:
-        generator = _bytes_generator(descriptor)
-    elif descriptor.type == _fd.TYPE_BOOL:
-        generator = gen.IterValueGenerator(descriptor.name, [True, False])
-    elif descriptor.type == _fd.TYPE_ENUM:
-        generator = _enum_generator(descriptor)
-    elif descriptor.type == _fd.TYPE_MESSAGE:
-        generator = descriptor_to_generator(descriptor.message_type, cls)
-        generator.set_name(descriptor.name)
+    if _descriptor.type in ints32 + ints64:
+        bitwidth = [32, 64][_descriptor.type in ints64]
+        unsigned = _descriptor.type not in ints_signed
+        generator = _int_generator(_descriptor, bitwidth, unsigned)
+    elif _descriptor.type == _fd.TYPE_DOUBLE:
+        generator = _float_generator(_descriptor, 64)
+    elif _descriptor.type == _fd.TYPE_FLOAT:
+        generator = _float_generator(_descriptor, 32)
+    elif _descriptor.type == _fd.TYPE_STRING:
+        generator = _string_generator(_descriptor)
+    elif _descriptor.type == _fd.TYPE_BYTES:
+        generator = _bytes_generator(_descriptor)
+    elif _descriptor.type == _fd.TYPE_BOOL:
+        generator = gen.IterValueGenerator(_descriptor.name, [True, False])
+    elif _descriptor.type == _fd.TYPE_ENUM:
+        generator = _enum_generator(_descriptor)
+    elif _descriptor.type == _fd.TYPE_MESSAGE:
+        generator = descriptor_to_generator(_descriptor.message_type, cls)
+        generator.set_name(_descriptor.name)
     else:
-        raise RuntimeError("type {} unsupported".format(descriptor.type))
+        raise RuntimeError("type {} unsupported".format(_descriptor.type))
 
     return generator
 
@@ -98,10 +97,10 @@ def _prototype_to_generator(descriptor, cls):
 def descriptor_to_generator(cls_descriptor, cls, limit=0):
     """Convert protobuf descriptor to a protofuzz generator for same type."""
     generators = []
-    for descriptor in cls_descriptor.fields_by_name.values():
-        generator = _prototype_to_generator(descriptor, cls)
+    for _descriptor in cls_descriptor.fields_by_name.values():
+        generator = _prototype_to_generator(_descriptor, cls)
 
-        if limit != 0:
+        if not limit == 0:
             generator.set_limit(limit)
 
         generators.append(generator)
@@ -127,14 +126,14 @@ def _assign_to_field(obj, name, val):
         raise RuntimeError("Unsupported type: {}".format(type(target)))
 
 
-def _fields_to_object(descriptor, fields):
+def _fields_to_object(_descriptor, fields):
     """Convert descriptor and a set of fields to a Protobuf instance."""
     # pylint: disable=protected-access
-    obj = descriptor._concrete_class()
+    obj = _descriptor._concrete_class()
 
     for name, value in fields:
         if isinstance(value, tuple):
-            subtype = descriptor.fields_by_name[name].message_type
+            subtype = _descriptor.fields_by_name[name].message_type
             value = _fields_to_object(subtype, value)
         _assign_to_field(obj, name, value)
 
@@ -154,9 +153,9 @@ class ProtobufGenerator(object):
 
     """
 
-    def __init__(self, descriptor):
+    def __init__(self, _descriptor):
         """Protobufgenerator constructor."""
-        self._descriptor = descriptor
+        self._descriptor = _descriptor
         self._dependencies = []
 
     def _iteration_helper(self, iter_class, limit):
@@ -180,7 +179,7 @@ class ProtobufGenerator(object):
         ...       required uint32 one = 1;
         ...       required uint32 two = 2;
         ...   }''')['Address']
-        >>> permuter.add_dependency('one', 'two', lambda val: max(0,val-1))
+        >>> permuter.add_dependency('one', 'two', lambda val: max(0, val - 1))
         >>> for obj in permuter.linear():
         ...   print("obj = {}".format(obj))
         ...

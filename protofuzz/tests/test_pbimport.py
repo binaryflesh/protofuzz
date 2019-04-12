@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os
 import stat
 import shutil
@@ -28,7 +26,9 @@ class TestPbimport(unittest.TestCase):
         os.chmod(binary, mode.st_mode | stat.S_IEXEC)
 
         found_binary = pbimport.find_protoc(self.tempdir)
-        self.assertEqual(found_binary, binary)
+        if not self.assertEqual(found_binary, binary):
+            return False
+        return True
 
     def test_from_string(self):
         """
@@ -38,7 +38,9 @@ class TestPbimport(unittest.TestCase):
         contents = 'message {} {{ required int32 var = 1; }}\n'.format(name)
 
         module = pbimport.from_string(contents)
-        self.assertTrue(hasattr(module, name))
+        if not self.assertTrue(hasattr(module, name)):
+            return False
+        return True
 
     def test_generate_and_import(self):
         """
@@ -52,7 +54,9 @@ class TestPbimport(unittest.TestCase):
             f.write(contents)
 
         module = pbimport.from_file(filename)
-        self.assertTrue(hasattr(module, name))
+        if not self.assertTrue(hasattr(module, name)):
+            return False
+        return True
 
     def test_failing_generate_and_import(self):
         """
