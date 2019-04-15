@@ -24,7 +24,7 @@ def _limit_helper(stream, limit):
         if limit == 1:
             return
         else:
-            limit = limit - 1 # FIXME
+            limit -= 1
 
 
 def _fuzzdb_integers(limit=0):

@@ -19,3 +19,8 @@ class TestValues(unittest.TestCase):
         vals = values.get_floats(32)
         for val in vals:
             self.assertIsInstance(val, float)
+
+    def test_integers(self):
+        vals = values.get_integers(32, True)
+        for val in vals:
+            self.assertIsInstance(val, int)
